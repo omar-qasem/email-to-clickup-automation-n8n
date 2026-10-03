@@ -1,0 +1,10 @@
+﻿category,owner_name,owner_role,owner_email,clickup_user_id,notes
+transformation_pmo,Transformation & PMO Lead,Transformation & Business Enablement,,,"Business diagnosis, strategy, transformation plans, PMO, project status and portfolio reports, steering committees"
+org_people,Org & People Consultant,Organizational & People Development,,,"Org structures, job descriptions, performance management, governance, policies, people and culture"
+data_bi,BI & Data Analyst,"Digital, Data & BI",,,"Dashboards, reports, KPIs, data pulls, analytics, data quality"
+ai_automation_systems,AI & Automation Officer,"Digital, Data & BI",,,"AI and automation, automated reports and reminders, integrations, platforms and systems, websites, technical problems"
+creative_design,Graphic Designer,"Brand, Commercial & Growth",,,"Social media designs, banners, flyers, posters, brochures, presentation design, brand assets"
+marketing_growth,Marketing & Digital Lead,"Brand, Commercial & Growth",,,"Digital marketing, social media plans, campaign results, SEO, brand development, go-to-market, commercial strategy"
+clients_proposals,Business Development Lead,General Management,,,"Proposals, quotations, pricing, new-business inquiries, client relationship matters"
+operations_admin,Operations Manager,Operations,,,"Internal operations: accounts and access, equipment, rooms, invoices and payments, HR and admin logistics"
+other,Operations Manager,Operations,,,Default owner for anything that fits no other category

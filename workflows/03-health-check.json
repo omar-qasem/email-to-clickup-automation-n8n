@@ -1,0 +1,409 @@
+{
+  "name": "Email Intake → Health check",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 2,
+              "triggerAtMinute": 7
+            }
+          ]
+        }
+      },
+      "id": "b6d3464b-d1d5-4f2f-97fe-280cd8e46b77",
+      "name": "Every 2 hours",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "h1",
+              "name": "cfg_monitor_url",
+              "value": "https://stately-puppy-1177c0.netlify.app/api/ingest",
+              "type": "string"
+            },
+            {
+              "id": "h2",
+              "name": "interval_min",
+              "value": 120,
+              "type": "number"
+            },
+            {
+              "id": "h3",
+              "name": "backlog_minutes",
+              "value": 15,
+              "type": "number"
+            },
+            {
+              "id": "h4",
+              "name": "lookback_hours",
+              "value": 4,
+              "type": "number"
+            },
+            {
+              "id": "h5",
+              "name": "n8n_url",
+              "value": "",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "c60e2bed-c95a-4d30-8f39-2c929c38493e",
+      "name": "Health settings",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        240,
+        112
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "f1e01f43-92b8-4edf-8b02-0de3ffc43384",
+      "name": "Check now",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        208
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "limit": 25,
+        "simple": false,
+        "filters": {
+          "includeSpamTrash": false,
+          "q": "in:inbox -from:me",
+          "readStatus": "both",
+          "receivedAfter": "={{ Date.now() - $json.lookback_hours * 3600000 }}"
+        },
+        "options": {
+          "downloadAttachments": false
+        }
+      },
+      "id": "77d03717-2161-42aa-8cea-3b1186a50389",
+      "name": "Gmail: recent inbox emails",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        480,
+        112
+      ],
+      "alwaysOutputData": true,
+      "webhookId": "f29f7d91-e5f3-48b2-98cb-8e2d40717156",
+      "onError": "continueRegularOutput",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "nHYHIOkJCKwpccXS",
+          "name": "Gmail account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "Cy1HqQMD1R6qsxho",
+          "cachedResultName": "intake_email_log"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "source",
+              "keyValue": "gmail"
+            }
+          ]
+        },
+        "returnAll": true
+      },
+      "id": "99c6dcb2-d859-40e2-87e9-139f6246991d",
+      "name": "Get processed emails",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        720,
+        112
+      ],
+      "executeOnce": true,
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Compares the inbox with the email log: an email that has been in the inbox for more than\n// backlog_minutes but is not in the log was never processed (workflow off, trigger stuck, batch limit, crash).\nconst cfg = $('Health settings').first().json;\nconst nowMs = Date.now();\nconst TZ = 'Asia/Amman';\nconst iso = (ms) => DateTime.fromMillis(ms).setZone(TZ).toISO({ suppressMilliseconds: true });\n\nlet gm = [];\ntry { gm = $('Gmail: recent inbox emails').all().map((i) => i.json || {}); } catch (e) { gm = []; }\nconst gErr = gm.find((j) => j.error);\nconst gmailOk = !gErr;\nconst gmailError = gErr ? String((gErr.error && (gErr.error.message || gErr.error.description)) || gErr.error).slice(0, 400) : '';\nconst inbox = gm.filter((j) => !j.error && (j.messageId || j.id));\n\nconst rows = $('Get processed emails').all().map((i) => i.json || {}).filter((r) => r.message_id);\nconst seen = new Set(rows.map((r) => String(r.message_id)));\nconst backlogMin = Number(cfg.backlog_minutes) || 15;\nconst received = (j) => {\n  const t = Date.parse(j.date || '');\n  return Number.isFinite(t) ? t : (j.internalDate ? Number(j.internalDate) : NaN);\n};\nconst waiting = inbox\n  .filter((j) => !seen.has(String(j.messageId || '')) && !seen.has(String(j.id || '')))\n  .map((j) => {\n    const from = (j.from && j.from.value && j.from.value[0]) || {};\n    return { subject: String(j.subject || '(no subject)'), from: String(from.address || (j.from && j.from.text) || ''), age: Math.round((nowMs - received(j)) / 60000) };\n  })\n  .filter((x) => Number.isFinite(x.age) && x.age >= backlogMin)\n  .sort((a, b) => b.age - a.age);\n\nconst times = rows.map((r) => Date.parse(r.processed_at)).filter(Number.isFinite);\nconst lastMs = times.length ? Math.max(...times) : null;\nconst day = nowMs - 24 * 3600000;\nconst recent = rows.filter((r) => Date.parse(r.processed_at) >= day);\nconst failed24 = recent.filter((r) => r.action_ok === false).length;\n\nlet status = 'ok';\nif (!gmailOk || waiting.length) status = 'critical';\nelse if (failed24 > 0) status = 'warning';\n\nconst notes = [];\nif (!gmailOk) notes.push('Could not read the inbox: ' + gmailError);\nif (waiting.length) notes.push(waiting.length + ' email(s) waiting more than ' + backlogMin + ' min');\nif (failed24) notes.push(failed24 + ' ClickUp action(s) failed in the last 24 h');\nif (!notes.length) notes.push('All emails in the inbox (last ' + cfg.lookback_hours + ' h) were processed');\n\nconst health = {\n  checked_at: iso(nowMs),\n  interval_min: Number(cfg.interval_min) || 120,\n  status,\n  gmail_ok: gmailOk,\n  gmail_error: gmailError,\n  inbox_recent: inbox.length,\n  backlog_count: waiting.length,\n  backlog_minutes: backlogMin,\n  oldest_backlog_min: waiting.length ? waiting[0].age : null,\n  backlog_subjects: waiting.slice(0, 10).map((x) => x.subject + (x.from ? ' (' + x.from + ')' : '') + ', ' + x.age + ' min'),\n  last_processed_at: lastMs ? iso(lastMs) : '',\n  processed_24h: recent.length,\n  failed_24h: failed24,\n  note: notes.join('. '),\n  workflow_id: String($workflow.id),\n  execution_id: String($execution.id),\n};\n\nlet alert = null;\nconst base = String(cfg.n8n_url || '').replace(/\\/$/, '');\nif (!gmailOk) {\n  alert = {\n    severity: 'critical', type: 'gmail_unreachable',\n    title: 'The health check could not read the requests inbox',\n    message: gmailError || 'Gmail did not answer.',\n    node: 'Gmail: recent inbox emails', workflow_name: 'Email Intake → Health check', workflow_id: String($workflow.id),\n    execution_id: String($execution.id), execution_url: base ? base + '/workflow/' + $workflow.id + '/executions/' + $execution.id : '',\n    dedupe_key: 'gmail_unreachable|health', mode: 'live',\n  };\n} else if (waiting.length) {\n  const w = waiting[0];\n  alert = {\n    severity: 'critical', type: 'backlog',\n    title: waiting.length + ' email(s) waiting more than ' + backlogMin + ' min without being processed',\n    message: 'Oldest: “' + w.subject + '”' + (w.from ? ' from ' + w.from : '') + ', in the inbox for ' + w.age + ' min but not in the email log. The intake workflow may be unpublished, its Gmail trigger may be failing, or more emails arrived than one run takes.',\n    details: waiting.slice(0, 10).map((x) => '• ' + x.subject + (x.from ? ' (' + x.from + ')' : '') + ', ' + x.age + ' min').join('\\n'),\n    node: 'Gmail: new email in requests inbox', workflow_name: 'Email Intake → ClickUp (Part 1)', workflow_id: '6OEi2eVmBIKSBcmb',\n    execution_url: base ? base + '/workflow/6OEi2eVmBIKSBcmb/executions' : '',\n    dedupe_key: 'backlog|intake', mode: 'live',\n  };\n}\nreturn [{ json: { health, alert, has_alert: !!alert, monitor_url: String(cfg.cfg_monitor_url || '').trim() } }];\n"
+      },
+      "id": "90a5b77c-072e-42a3-8de2-80e21bf623ac",
+      "name": "Check health",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        960,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.monitor_url }}",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              },
+              "rightValue": ""
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "140d328f-1771-4819-b256-940ade243768",
+      "name": "Dashboard connected?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1200,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.monitor_url }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ type: \"health\", data: $json.health }) }}",
+        "options": {
+          "timeout": 8000
+        }
+      },
+      "id": "68dfc11c-22bd-4087-949a-691bf24d552e",
+      "name": "Send health to dashboard",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1440,
+        0
+      ],
+      "onError": "continueRegularOutput",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "SGIiPSukm8GkTVCY",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.has_alert }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "rightValue": ""
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "3c99fe3c-affb-4142-b71a-68a742a3ff2a",
+      "name": "Problem found?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1200,
+        224
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "XsSz1hCX00g6fpZP"
+        },
+        "options": {
+          "waitForSubWorkflow": false
+        }
+      },
+      "id": "48b308cd-f9ef-49e5-8569-bc1298478e9f",
+      "name": "Raise alert",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        1440,
+        224
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "content": "## Health check\nRuns every 2 hours (and on demand) to catch **silent** failures that no error message reports:\n- an email sits in the inbox but never reached the email log (workflow unpublished, Gmail trigger stuck, more emails than one run takes)\n- n8n can no longer read the inbox (Gmail login expired)\n\nEach check is sent to the dashboard as a heartbeat; a missing heartbeat is itself shown as a problem. Problems go to **Email Intake → Alerts** (sound on the dashboard + email).\n\n**Settings:** `cfg_monitor_url` = dashboard address + `/api/ingest`, `interval_min` must match the schedule, `backlog_minutes` = how long an email may wait, `lookback_hours` = how far back to look.\n\nCost: 12 executions a day (about 360 a month).",
+        "height": 380,
+        "width": 520,
+        "color": 5
+      },
+      "id": "27ca2ebb-9e33-42b8-88e4-06529388f0cb",
+      "name": "Sticky Note f98a0f4f",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        128,
+        304
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Every 2 hours": {
+      "main": [
+        [
+          {
+            "node": "Health settings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Health settings": {
+      "main": [
+        [
+          {
+            "node": "Gmail: recent inbox emails",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check now": {
+      "main": [
+        [
+          {
+            "node": "Health settings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail: recent inbox emails": {
+      "main": [
+        [
+          {
+            "node": "Get processed emails",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get processed emails": {
+      "main": [
+        [
+          {
+            "node": "Check health",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check health": {
+      "main": [
+        [
+          {
+            "node": "Dashboard connected?",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Problem found?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Dashboard connected?": {
+      "main": [
+        [
+          {
+            "node": "Send health to dashboard",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Problem found?": {
+      "main": [
+        [
+          {
+            "node": "Raise alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": true,
+    "errorWorkflow": "XsSz1hCX00g6fpZP",
+    "timezone": "Asia/Amman",
+    "saveManualExecutions": true,
+    "executionTimeout": 120,
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "versionId": "1bcee8eb-bb11-4a48-8b4a-fd2f9ae72cc2",
+  "meta": {
+    "aiBuilderAssisted": true,
+    "builderVariant": "mcp"
+  },
+  "id": "JCx4XAMUQh7wQ8Yr",
+  "tags": [],
+  "description": "Every 2 hours: finds emails stuck in the inbox that never reached the email log, checks Gmail access, sends a heartbeat to the monitoring dashboard and raises alerts."
+}

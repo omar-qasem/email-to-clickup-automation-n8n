@@ -1,0 +1,569 @@
+{
+  "name": "Email Intake → Alerts",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "69a62d35-c856-4355-95d2-c2ce61ce97c8",
+      "name": "A workflow failed",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a1",
+              "name": "cfg_monitor_url",
+              "value": "https://stately-puppy-1177c0.netlify.app/api/ingest",
+              "type": "string"
+            },
+            {
+              "id": "a2",
+              "name": "cfg_alert_email",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "a3",
+              "name": "cfg_email_every_min",
+              "value": 15,
+              "type": "number"
+            },
+            {
+              "id": "a4",
+              "name": "cfg_n8n_url",
+              "value": "",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "b9afa991-b9e0-4114-b1a6-2a06c3e9cc8a",
+      "name": "Alert settings",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        464,
+        208
+      ]
+    },
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "id": "ce056979-2cf7-452f-bff4-31cb63e5d800",
+      "name": "Reported by another workflow",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        208
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "7850bb36-bc34-4ee5-aadf-77ae528ff9ef",
+      "name": "Send a test alert",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Sends a test alert through the whole alert path (table, dashboard and, if you want, email).\n// Set ALSO_SEND_EMAIL to true to receive a test email as well.\nconst ALSO_SEND_EMAIL = false;\nreturn [{ json: { alert: {\n  severity: 'test',\n  type: 'test',\n  title: 'Test alert from n8n',\n  message: 'This is a drill sent from the “Email Intake → Alerts” workflow. Nothing is broken.',\n  node: 'Send a test alert',\n  workflow_name: 'Email Intake → Alerts',\n  dedupe_key: `test|${Date.now()}`,\n  email_test: ALSO_SEND_EMAIL,\n} } }];\n"
+      },
+      "id": "94f9498c-dd49-4d86-85ae-4af059fb9d62",
+      "name": "Test alert",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        224,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Turns any problem into one alert: a failed workflow (Error Trigger), a failed step reported by the\n// intake workflow (ClickUp or AI), a health-check finding, or a test. Decides if it should be emailed.\nconst store = $getWorkflowStaticData('global');\nstore.lastEmail = store.lastEmail || {};\nstore.recent = store.recent || {};\nconst esc = (s) => String(s == null ? '' : s).replace(/[&<>\"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '\"': '&quot;' }[c]));\n\nfunction hintFor(a) {\n  const m = `${a.message || ''} ${a.details || ''}`.toLowerCase();\n  const n = String(a.node || '').toLowerCase();\n  if (/\\b(401|403)\\b|unauthori[sz]ed|forbidden|invalid_grant|token (has )?expired|invalid credentials|oauth/.test(m)) {\n    if (n.includes('clickup')) return 'The ClickUp login is not valid any more: n8n → Credentials → ClickUp account → Reconnect, then publish the intake workflow again.';\n    if (n.includes('gmail') || a.type === 'trigger_error' || a.type === 'gmail_unreachable') return 'The Gmail login is not valid any more: n8n → Credentials → Gmail account → Reconnect, then publish the intake workflow again.';\n    return 'A login used by this node is not valid any more: reconnect its credential in n8n → Credentials.';\n  }\n  if (/\\b429\\b|rate.?limit|too many requests/.test(m)) return 'The service is rate-limiting n8n. It usually clears on its own; if it repeats, lower cfg_batch_limit in Settings.';\n  if (/insufficient|quota|credits?\\b|billing|exceeded your/.test(m)) return 'The AI provider is out of credits: add credits, or switch the OpenAI model node to your own credential.';\n  if (/timed? ?out|etimedout|econnreset|socket hang up|\\b50[234]\\b|aborted/.test(m)) return 'A service did not answer in time. The next run tries again; if it repeats, check the service status and lower cfg_batch_limit.';\n  if (/not found|\\b404\\b|does not exist/.test(m)) return 'Something this node points to no longer exists (a ClickUp list or task, or a data table). Check the IDs in the Settings node.';\n  if (a.type === 'backlog') return 'Emails are waiting without being processed: open the intake workflow, check it is published, and look at its latest executions and the Gmail credential.';\n  if (a.type === 'gmail_unreachable') return 'n8n could not read the inbox: n8n → Credentials → Gmail account → Reconnect.';\n  if (a.type === 'ai_failed') return 'Nothing to do for one failure: the email is in Needs Review. If it repeats, check the AI credits or the model in n8n.';\n  if (a.type === 'clickup_action_failed') return 'Open the execution to see what ClickUp answered, fix the cause, then create the task by hand from the email details.';\n  if (a.type === 'test') return 'This is a drill. Acknowledge it on the dashboard to stop the sound.';\n  return 'Open the execution in n8n: the failing node shows its input and the exact error.';\n}\n\nconst out = [];\nfor (const item of $input.all()) {\n  const j = item.json;\n  const cfg = {\n    url: String(j.cfg_monitor_url || '').trim(),\n    email: String(j.cfg_alert_email || '').trim(),\n    every: Number(j.cfg_email_every_min) || 15,\n    base: String(j.cfg_n8n_url || '').replace(/\\/$/, ''),\n  };\n  let a = null;\n  if (j.execution || j.trigger) {\n    // From the Error Trigger: a workflow stopped, or its trigger (Gmail) failed\n    const ex = j.execution || {};\n    const tr = j.trigger || {};\n    const err = ex.error || tr.error || {};\n    const wf = j.workflow || {};\n    const node = ex.lastNodeExecuted || (err.node && err.node.name) || '';\n    a = {\n      severity: 'critical',\n      type: j.trigger ? 'trigger_error' : 'workflow_error',\n      title: j.trigger ? `The trigger of “${wf.name || 'a workflow'}” failed` : `“${wf.name || 'A workflow'}” stopped with an error`,\n      message: String(err.message || 'Unknown error'),\n      details: String(err.description || err.stack || '').slice(0, 1500),\n      workflow_name: wf.name || '',\n      workflow_id: String(wf.id || ''),\n      node: node || (j.trigger ? 'Trigger' : ''),\n      execution_id: String(ex.id || ''),\n      execution_url: ex.url || (ex.id && cfg.base && wf.id ? `${cfg.base}/workflow/${wf.id}/executions/${ex.id}` : ''),\n      mode: String(ex.mode || tr.mode || ''),\n    };\n  } else if (j.lane !== undefined && j.message_id !== undefined) {\n    // From the intake workflow: one email whose ClickUp action or AI step failed\n    const clickupFailed = j.action_ok === false;\n    a = {\n      severity: clickupFailed ? 'critical' : 'warning',\n      type: clickupFailed ? 'clickup_action_failed' : 'ai_failed',\n      title: clickupFailed ? (j.lane === 'FOLLOW_UP_COMMENT' ? 'ClickUp comment was not added' : 'ClickUp task was not created') : 'AI step failed for an email',\n      message: String(j.error_message || j.reason || '') + (clickupFailed ? '' : ' The email went to Needs Review, so it is not lost.'),\n      workflow_name: 'Email Intake → ClickUp (Part 1)',\n      workflow_id: '6OEi2eVmBIKSBcmb',\n      node: j.error_node || (clickupFailed ? 'ClickUp' : 'AI triage'),\n      execution_id: String(j.execution_id || ''),\n      message_id: String(j.message_id || ''),\n      subject: String(j.subject || ''),\n      mode: String(j.mode || ''),\n    };\n    a.execution_url = a.execution_id && cfg.base ? `${cfg.base}/workflow/${a.workflow_id}/executions/${a.execution_id}` : '';\n  } else if (j.alert && typeof j.alert === 'object') {\n    a = { ...j.alert };\n  }\n  if (!a) continue;\n\n  const now = DateTime.now().setZone('Asia/Amman');\n  a.alert_id = a.alert_id || `A-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;\n  a.created_at = now.toISO();\n  a.dedupe_key = a.dedupe_key || `${a.type}|${a.node || ''}`;\n  a.hint = a.hint || hintFor(a);\n  a.details = a.details || '';\n\n  // The same warning 3 times within an hour becomes critical (e.g. the AI keeps failing)\n  const since = Date.now() - 3600000;\n  store.recent[a.dedupe_key] = (store.recent[a.dedupe_key] || []).filter((t) => t > since).concat([Date.now()]);\n  const times = store.recent[a.dedupe_key].length;\n  if (a.severity === 'warning' && times >= 3) {\n    a.severity = 'critical';\n    a.title = `${a.title} (${times} times in the last hour)`;\n  }\n\n  // Email: critical alerts only, at most one per problem every cfg_email_every_min minutes\n  const isTest = a.type === 'test';\n  const wants = !!cfg.email && ((a.severity === 'critical' && !isTest) || a.email_test === true);\n  const last = store.lastEmail[a.dedupe_key] || 0;\n  a.should_email = wants && (a.email_test === true || Date.now() - last > cfg.every * 60000);\n  if (a.should_email) store.lastEmail[a.dedupe_key] = Date.now();\n  a.emailed = a.should_email;\n  a.email_to = cfg.email;\n\n  const dashboard = cfg.url.replace(/\\/api\\/ingest\\/?$/, '/#alerts');\n  const label = isTest ? 'TEST' : a.severity.toUpperCase();\n  a.email_subject = `[${label}] Email intake: ${a.title}`;\n  a.email_html = [\n    `<div style=\"font-family:Arial,sans-serif;font-size:14px;color:#0e1330;max-width:620px\">`,\n    `<div style=\"background:${a.severity === 'critical' ? '#d03b3b' : '#4a3aa7'};color:#fff;padding:14px 18px;border-radius:10px 10px 0 0\"><b>${esc(label)}</b> · ${esc(a.title)}</div>`,\n    `<div style=\"border:1px solid #e3e5f0;border-top:0;padding:16px 18px;border-radius:0 0 10px 10px\">`,\n    `<p><b>What happened:</b> ${esc(a.message)}</p>`,\n    `<p><b>Where:</b> ${esc(a.node || '—')}${a.workflow_name ? ` in ${esc(a.workflow_name)}` : ''}</p>`,\n    a.subject ? `<p><b>Email:</b> ${esc(a.subject)}</p>` : '',\n    `<p><b>When:</b> ${esc(now.toFormat('ccc d LLL yyyy, HH:mm'))} (Amman)</p>`,\n    `<p style=\"background:#eef0ff;padding:10px 12px;border-radius:8px\"><b>What to do:</b> ${esc(a.hint)}</p>`,\n    `<p>${a.execution_url ? `<a href=\"${esc(a.execution_url)}\">Open the execution in n8n</a>` : ''}${a.execution_url && dashboard.startsWith('http') ? ' · ' : ''}${dashboard.startsWith('http') ? `<a href=\"${esc(dashboard)}\">Open the dashboard</a>` : ''}</p>`,\n    `<p style=\"color:#767b9a;font-size:12px\">Sent by the Email Intake alerts workflow. Repeats of the same problem are held back for ${cfg.every} minutes.</p>`,\n    `</div></div>`,\n  ].join('');\n  a.monitor_url = cfg.url;\n  delete a.email_test;\n  out.push({ json: a });\n}\nreturn out;\n"
+      },
+      "id": "cc1a9ce3-949a-4ced-9e27-42ce0ddfcb47",
+      "name": "Build alert",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        704,
+        208
+      ]
+    },
+    {
+      "parameters": {
+        "dataTableId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "vDD3uu3rr7iCYJDK",
+          "cachedResultName": "intake_alerts"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "alert_id": "={{ $json.alert_id }}",
+            "created_at": "={{ $json.created_at }}",
+            "severity": "={{ $json.severity }}",
+            "type": "={{ $json.type }}",
+            "title": "={{ $json.title }}",
+            "message": "={{ $json.message }}",
+            "details": "={{ $json.details }}",
+            "hint": "={{ $json.hint }}",
+            "workflow_name": "={{ $json.workflow_name }}",
+            "workflow_id": "={{ $json.workflow_id }}",
+            "node": "={{ $json.node }}",
+            "execution_id": "={{ $json.execution_id }}",
+            "execution_url": "={{ $json.execution_url }}",
+            "message_id": "={{ $json.message_id }}",
+            "subject": "={{ $json.subject }}",
+            "mode": "={{ $json.mode }}",
+            "dedupe_key": "={{ $json.dedupe_key }}",
+            "emailed": "={{ $json.emailed }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "alert_id",
+              "displayName": "alert_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "severity",
+              "displayName": "severity",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "type",
+              "displayName": "type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "title",
+              "displayName": "title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "message",
+              "displayName": "message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "details",
+              "displayName": "details",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "hint",
+              "displayName": "hint",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "workflow_name",
+              "displayName": "workflow_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "workflow_id",
+              "displayName": "workflow_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "node",
+              "displayName": "node",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "execution_id",
+              "displayName": "execution_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "execution_url",
+              "displayName": "execution_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "message_id",
+              "displayName": "message_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "subject",
+              "displayName": "subject",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "mode",
+              "displayName": "mode",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "dedupe_key",
+              "displayName": "dedupe_key",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "emailed",
+              "displayName": "emailed",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "canBeUsedToMatch": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "e145a5e9-1a26-40e9-a346-721afb989ad1",
+      "name": "Save alert",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        960,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.monitor_url }}",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              },
+              "rightValue": ""
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "c66a5efe-46bd-4f25-9ead-7c81af4066ae",
+      "name": "Dashboard connected?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        960,
+        208
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.monitor_url }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ type: \"alert\", data: { alert_id: $json.alert_id, created_at: $json.created_at, severity: $json.severity, type: $json.type, title: $json.title, message: $json.message, details: $json.details, hint: $json.hint, workflow_name: $json.workflow_name, workflow_id: $json.workflow_id, node: $json.node, execution_id: $json.execution_id, execution_url: $json.execution_url, message_id: $json.message_id, subject: $json.subject, mode: $json.mode, dedupe_key: $json.dedupe_key, emailed: $json.emailed } }) }}",
+        "options": {
+          "timeout": 8000
+        }
+      },
+      "id": "86eecc8d-5055-4ae1-b854-b76746c9d769",
+      "name": "Send alert to dashboard",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1200,
+        208
+      ],
+      "onError": "continueRegularOutput",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "SGIiPSukm8GkTVCY",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.should_email }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "rightValue": ""
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "e4ef5d7f-9702-4ee0-a045-59557b81a570",
+      "name": "Email it?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        960,
+        432
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.email_to }}",
+        "subject": "={{ $json.email_subject }}",
+        "message": "={{ $json.email_html }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "08e295d0-4399-4c51-a5d1-3f61c572fe0b",
+      "name": "Email the alert",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        1200,
+        432
+      ],
+      "webhookId": "32562936-b573-4e17-b637-6f31a005d1ab",
+      "onError": "continueRegularOutput",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "nHYHIOkJCKwpccXS",
+          "name": "Gmail account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Alerts\nEvery problem ends here, from three places:\n1. **A workflow failed**: n8n runs this workflow when the intake, health check or history workflow stops with an error (set as their error workflow).\n2. **Reported by another workflow**: the intake workflow reports each email whose ClickUp action or AI step failed; the health check reports emails stuck in the inbox.\n3. **Send a test alert**: run it by hand to test the path.\n\nEach alert is saved in `intake_alerts`, sent to the dashboard (sound + banner) and, if critical, emailed. The same problem is emailed at most once every `cfg_email_every_min` minutes.\n\n**Settings:** `cfg_monitor_url` = the dashboard address + `/api/ingest`, `cfg_alert_email` = who gets the emails.",
+        "height": 330,
+        "width": 776,
+        "color": 4
+      },
+      "id": "456e1249-e1bc-4522-a63d-df6fc30d9cf1",
+      "name": "Sticky Note e4a45ea9",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        16,
+        560
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "A workflow failed": {
+      "main": [
+        [
+          {
+            "node": "Alert settings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Alert settings": {
+      "main": [
+        [
+          {
+            "node": "Build alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reported by another workflow": {
+      "main": [
+        [
+          {
+            "node": "Alert settings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a test alert": {
+      "main": [
+        [
+          {
+            "node": "Test alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Test alert": {
+      "main": [
+        [
+          {
+            "node": "Alert settings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build alert": {
+      "main": [
+        [
+          {
+            "node": "Save alert",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Dashboard connected?",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Email it?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Dashboard connected?": {
+      "main": [
+        [
+          {
+            "node": "Send alert to dashboard",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email it?": {
+      "main": [
+        [
+          {
+            "node": "Email the alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": true,
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "versionId": "c5c690d2-eb8b-4283-9f28-cfa87d4fbeb3",
+  "meta": {
+    "aiBuilderAssisted": true,
+    "builderVariant": "mcp"
+  },
+  "id": "XsSz1hCX00g6fpZP",
+  "tags": [],
+  "description": "Error workflow for the intake: every failure (workflow errors, Gmail trigger errors, ClickUp/AI failures, stuck emails) becomes one alert, saved, sent to the dashboard and emailed if critical."
+}

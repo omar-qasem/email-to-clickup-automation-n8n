@@ -1,0 +1,219 @@
+﻿sample_id,message_id,thread_id,in_reply_to,from_name,from_email,to_email,cc,subject,body,received_at,auto_submitted,list_unsubscribe,lang,split,exp_lane,acceptable_lanes,exp_is_request,exp_type,exp_priority,exp_category,exp_owner,exp_due,notes
+T01,<202609300905.t01@nourfoods.example>,thr-t01,,Khaled Abu-Zaid,khaled.abuzaid@nourfoods.example,requests@company.example,,Q3 sales performance report,"Hi team,
+
+Could you please prepare the Q3 sales performance report for Nour Foods (July to September): sales by product line and by region, compared with Q2?
+
+We need it by Tuesday 13 October for our quarterly review meeting.
+
+Thanks,
+Khaled Abu-Zaid
+Marketing Manager, Nour Foods",2026-09-30T09:05:00+03:00,,,en,holdout,AUTO_CREATE,AUTO_CREATE,true,new_request,normal,data_bi,BI & Data Analyst,2026-10-13,Clear client request with an explicit date 9 business days away: Normal task in To Do
+T02,<202609300940.t02@zaytouna.example>,thr-t02,,Sara Majali,sara.majali@zaytouna.example,requests@company.example,,بوستر عرض نهاية الأسبوع,"مرحبا،
+
+بدنا تصميم بوستر لعرض نهاية الأسبوع (خصم 20% على الأجهزة المنزلية)، بمقاس ستوري انستغرام وبوست عادي، وبالعربي والإنجليزي.
+
+لو سمحتوا يكون جاهز بكرا الصبح عشان نلحق ننزله.
+
+شكراً،
+سارة المجالي
+الزيتونة للتجزئة",2026-09-30T09:40:00+03:00,,,ar,holdout,AUTO_CREATE,AUTO_CREATE,true,new_request,high,creative_design,Graphic Designer,2026-10-01,"Arabic request: 'بكرا' on Wednesday means Thursday 1 October, due in 1 business day: High task in To Do"
+T03,<202609301015.t03@petralogistics.example>,thr-t03,,Reem Tawalbeh,reem.tawalbeh@petralogistics.example,requests@company.example,,URGENT: tracking page shows wrong delivery dates,"Hi,
+
+Since this morning the shipment tracking page on our website has been showing the wrong delivery date to every customer (all orders show 1 January). Our call center is getting complaints every few minutes.
+
+Please fix it today. This is hurting our customers right now.
+
+Reem Tawalbeh
+Operations Director, Petra Logistics",2026-09-30T10:15:00+03:00,,,en,holdout,AUTO_CREATE,AUTO_CREATE,true,client_escalation|new_request,urgent,ai_automation_systems|data_bi,AI & Automation Officer|BI & Data Analyst,2026-09-30,Client-facing page broken now and must be fixed today: Urgent task in To Do
+T04,<202609301130.t04@nourfoods.example>,thr-t01,<202609300905.t01@nourfoods.example>,Khaled Abu-Zaid,khaled.abuzaid@nourfoods.example,requests@company.example,,Re: Q3 sales performance report,"Hi again,
+
+One more thing: please add a page with the top 10 products by growth.
+
+Thanks,
+Khaled
+
+On Wed, 30 Sep 2026 at 09:05, Khaled Abu-Zaid <khaled.abuzaid@nourfoods.example> wrote:
+> Hi team,
+> Could you please prepare the Q3 sales performance report for Nour Foods?",2026-09-30T11:30:00+03:00,,,en,holdout,FOLLOW_UP_COMMENT,FOLLOW_UP_COMMENT,true,follow_up,,,,,"Reply in T01's thread: comment on T01's task, no new task (rule, no AI)"
+T05,<202609301100.t05@company.example>,thr-t05,,Yazan Odeh,yazan.odeh@company.example,requests@company.example,,Al-Waha,"Hi,
+
+Can someone look into the Al-Waha thing we talked about? It needs sorting out.
+
+Y.",2026-09-30T11:00:00+03:00,,,en,holdout,HUMAN_REVIEW,HUMAN_REVIEW,true,,,,,,"Vague ask: Needs Review (unclear), with a question for the requester"
+T06,<202609301210.t06@company.example>,thr-t06,,Hala Masri,hala.masri@company.example,requests@company.example,,Approval needed: 4 new laptops,"Hi,
+
+The supplier sent the proforma invoice for 4 new laptops for the design team: JOD 3,200 in total. Please approve the purchase and pay the 50% deposit by Sunday 4 October so they can deliver next week.
+
+The invoice is attached.
+
+Thanks,
+Hala",2026-09-30T12:10:00+03:00,,,en,holdout,HUMAN_REVIEW,HUMAN_REVIEW,true,new_request,high,operations_admin,Operations Manager,2026-10-04,"Asks us to approve and pay money: Needs Review, a manager approves first"
+T07,<202609301240.t07@company.example>,thr-t07,,Rami Khoury,rami.khoury@company.example,requests@company.example,,Jordan Valley Farms – two requests,"Hi all,
+
+Jordan Valley Farms asked us for two things:
+1) A monthly dashboard of harvest volumes per farm.
+2) A new brochure for their organic product line.
+
+Both by Thursday 15 October please.
+
+Rami",2026-09-30T12:40:00+03:00,,,en,holdout,HUMAN_REVIEW,HUMAN_REVIEW,true,new_request,,,,,"Two asks for two teams (BI and design): Needs Review, split into one task per team"
+T08,<202609300800.t08@retailinsights.example>,thr-t08,,Retail Insights,newsletter@retailinsights.example,requests@company.example,,Retail Insights Weekly #88: 7 loyalty program ideas for Q4,"This week: 7 loyalty program ideas for Q4, a free customer survey template, and our upcoming webinar on retail analytics.
+
+Read online | Manage preferences | Unsubscribe",2026-09-30T08:00:00+03:00,,"<mailto:unsubscribe@retailinsights.example>, <https://retailinsights.example/unsubscribe>",en,holdout,LOG_ONLY,LOG_ONLY,false,newsletter,,,,,Newsletter caught by the List-Unsubscribe header rule (no AI)
+T09,<202609300830.t09@alwaha-clinics.example>,thr-t09,,Dr. Lubna Farah,lubna.farah@alwaha-clinics.example,requests@company.example,,شكراً على الورشة,"مرحباً،
+
+حبيت أشكركم على ورشة تقييم الأداء اللي عملتوها لفريقنا امبارح، الكل استفاد منها كثير. ما عنا أي طلبات حالياً.
+
+د. لبنى فرح
+عيادات الواحة",2026-09-30T08:30:00+03:00,,,ar,holdout,LOG_ONLY,LOG_ONLY,false,fyi_or_thanks,,,,,Arabic thank-you with no action: the AI decides it is not a request
+T10,<202609301300.t10@mail.example>,thr-t10,,Dr. Nadia Karam,nadia.karam@mail.example,requests@company.example,,Website for my clinic,"Hello,
+
+I run a small dental clinic in Madaba and I would like a simple website with online appointment booking. Could you send me a quotation?
+
+No rush at all, whenever you have time.
+
+Thanks,
+Dr. Nadia Karam",2026-09-30T13:00:00+03:00,,,en,holdout,AUTO_CREATE,AUTO_CREATE,true,new_request|question,low,clients_proposals,Business Development Lead,2026-10-14,"New sender from a personal address, clear request, 'no rush': Low task in To Do, due from the Low SLA (+10 business days)"
+T11,<202610010840.t11@petralogistics.example>,thr-t03,<202609301015.t03@petralogistics.example>,Reem Tawalbeh,reem.tawalbeh@petralogistics.example,requests@company.example,,Re: URGENT: tracking page shows wrong delivery dates,"Hi,
+
+It is Thursday morning and the tracking page still shows 1 January for some orders. Any update?
+
+Reem
+
+On Wed, 30 Sep 2026 at 10:15, Reem Tawalbeh <reem.tawalbeh@petralogistics.example> wrote:
+> Since this morning the shipment tracking page on our website has been showing the wrong delivery date to every customer.",2026-10-01T08:40:00+03:00,,,en,holdout,FOLLOW_UP_COMMENT,FOLLOW_UP_COMMENT,true,follow_up,,,,,"Chaser in T03's thread from the previous run: comment on the existing Petra task (rule, no AI)"
+T12,<202610010910.t12@zaytouna.example>,thr-t12,,Sara Majali,sara.majali@zaytouna.example,requests@company.example,,البوستر – متابعة,"مرحبا،
+
+بخصوص البوستر اللي طلبناه امبارح لعرض نهاية الأسبوع (خصم 20% على الأجهزة المنزلية): بس حابين نتأكد إنه رح يكون جاهز اليوم الصبح.
+
+شكراً،
+سارة",2026-10-01T09:10:00+03:00,,,ar,holdout,FOLLOW_UP_COMMENT,FOLLOW_UP_COMMENT|HUMAN_REVIEW,true,follow_up,,,,,Same requester asks about T02's poster in a new thread: comment on the existing task (Needs Review as a possible duplicate is also accepted)
+T13,<202610011020.t13@company.example>,thr-t13,,Dana Saleh,dana.saleh@company.example,requests@company.example,,Q3 client projects summary for the board,"Hi team,
+
+Please prepare a one-page summary of our Q3 client projects (status, key results and next steps for each client) for the board pack.
+
+I need it by Thursday 15 October.
+
+Thanks,
+Dana",2026-10-01T10:20:00+03:00,,,en,holdout,AUTO_CREATE,AUTO_CREATE,true,new_request,high,transformation_pmo|data_bi,Transformation & PMO Lead|BI & Data Analyst,2026-10-15,"General Manager (VIP) with a deadline 10 business days away: raised from Normal to High, straight to To Do"
+T14,<202610010945.t14@nourfoods.example>,thr-t14,,Khaled Abu-Zaid,khaled.abuzaid@nourfoods.example,requests@company.example,,تعديل بروشور المنتجات,"مرحبا،
+
+بدنا تعديل على بروشور منتجات نور للأغذية: نضيف منتجين جداد (زيت زيتون عضوي وزعتر بلدي) ونطلع نسخة PDF جاهزة للطباعة.
+
+لو سمحتوا يكون جاهز بكرا.
+
+خالد – نور للأغذية",2026-10-01T09:45:00+03:00,,,ar,holdout,AUTO_CREATE,AUTO_CREATE,true,change_request|new_request,high,creative_design,Graphic Designer,2026-10-04,Arabic 'بكرا' said on Thursday means Sunday 4 October (weekend skipped): High task in To Do
+T15,<202610011100.t15@jvfarms.example>,thr-t15,,Fadi Qasrawi,fadi.qasrawi@jvfarms.example,requests@company.example,,NDA before sharing our farm data,"Dear team,
+
+Before we share our farm production data for the dashboard project, our lawyer asks that you sign the attached non-disclosure agreement and send it back by Monday 5 October.
+
+Regards,
+Fadi Qasrawi
+General Manager, Jordan Valley Farms",2026-10-01T11:00:00+03:00,,,en,holdout,HUMAN_REVIEW,HUMAN_REVIEW,true,new_request,,,,,"Client asks us to sign a legal agreement: Needs Review, a manager approves first"
+T16,<202610011140.t16@alwaha-clinics.example>,thr-t16,,Dr. Lubna Farah,lubna.farah@alwaha-clinics.example,requests@company.example,,Patient satisfaction survey report,"Hello,
+
+Could you please send us the updated patient satisfaction survey report by Monday 28 September? We need it for our quality committee.
+
+Thank you,
+Dr. Lubna Farah
+Al-Waha Clinics",2026-10-01T11:40:00+03:00,,,en,holdout,HUMAN_REVIEW,HUMAN_REVIEW,true,new_request,,data_bi,BI & Data Analyst,,"The deadline in the email (28 Sep) is before the email date (1 Oct): Needs Review, confirm the real date"
+T17,<202610010805.t17@company.example>,thr-t17,,Sami Nasser,sami.nasser@company.example,requests@company.example,,Automatic reply: Out of office until Sunday 4 October,"Thank you for your email. I am out of the office until Sunday 4 October with limited access to email.
+For urgent design requests, please contact requests@company.example.",2026-10-01T08:05:00+03:00,auto-replied,,en,holdout,LOG_ONLY,LOG_ONLY,false,auto_reply,,,,,Out-of-office caught by the Auto-Submitted header (no AI)
+T18,<202610011215.t18@botcraft.example>,thr-t18,,Lina Awad,lina@botcraft.example,requests@company.example,,WhatsApp chatbots for your clients in 7 days,"Hi team,
+
+BotCraft builds WhatsApp chatbots for agencies and their clients. We can launch one for any of your clients in 7 days, starting from JOD 150 per month.
+
+Would you have 20 minutes next week for a quick demo?
+
+Best,
+Lina Awad
+BotCraft",2026-10-01T12:15:00+03:00,,,en,holdout,LOG_ONLY,LOG_ONLY,false,other,,,,,"Vendor selling its own service (new sender): a sales pitch, so it is only logged"
+T19,<202610011250.t19@company.example>,thr-t19,,Hala Masri,hala.masri@company.example,requests@company.example,,Nour Foods workshop on Monday – room and lunch,"Hi,
+
+For the Nour Foods workshop on Monday 5 October:
+1) Book the big meeting room from 10:00 to 14:00.
+2) Order lunch for 12 people.
+
+Thanks,
+Hala",2026-10-01T12:50:00+03:00,,,en,holdout,AUTO_CREATE,AUTO_CREATE,true,new_request,,operations_admin,Operations Manager,,Two asks for the same owner: one task in To Do with a checklist
+T20,<202610011330.t20@petralogistics.example>,thr-t20,,Reem Tawalbeh,reem.tawalbeh@petralogistics.example,requests@company.example,,تعديل على تقرير العمليات الأسبوعي,"مرحبا،
+
+بخصوص تقرير العمليات الأسبوعي: بدنا نغيّر ترتيب الأعمدة بحيث يكون الفرع أول عمود، ونضيف عمود لعدد الشحنات المرتجعة.
+
+بدنا ياه جاهز الأسبوع الجاي.
+
+شكراً،
+ريم",2026-10-01T13:30:00+03:00,,,ar,holdout,AUTO_CREATE,AUTO_CREATE,true,change_request,normal,data_bi,BI & Data Analyst,2026-10-08,"Arabic change request, 'next week' with no day means Thursday of next week (8 Oct): Normal task in To Do"
+T21,<202610150900.t21@zaytouna.example>,thr-t21,,Mahmoud Shami,mahmoud.shami@zaytouna.example,requests@company.example,,Customer loyalty dashboard,"Dear team,
+
+We would like a dashboard for our loyalty program: active members, points issued and redeemed, and repeat purchase rate by store.
+
+Please have the first version ready by Thursday 29 October.
+
+Best regards,
+Mahmoud Shami
+CEO, Zaytouna Retail",2026-10-15T09:00:00+03:00,,,en,holdout,AUTO_CREATE,AUTO_CREATE,true,new_request,normal,data_bi,BI & Data Analyst,2026-10-29,"Demo: clear client request with an explicit date 10 business days away, straight to To Do (Normal)"
+T22,<202610150930.t22@petralogistics.example>,thr-t22,,Reem Tawalbeh,reem.tawalbeh@petralogistics.example,requests@company.example,,سياسة الإجازات – النسخة المعدّلة,"مرحبا،
+
+بعد ملاحظات الإدارة على مسودة سياسة الإجازات، بدنا النسخة المعدّلة مع جدول صلاحيات الموافقة الجديد.
+
+لو سمحتوا بكرا تكون جاهزة.
+
+شكراً،
+ريم الطوالبة
+بترا للخدمات اللوجستية",2026-10-15T09:30:00+03:00,,,ar,holdout,AUTO_CREATE,AUTO_CREATE,true,change_request|new_request,high,org_people,Org & People Consultant,2026-10-18,Demo: Arabic 'بكرا' on Thursday means Sunday 18 October (Jordan weekend skipped): High task in To Do
+T23,<202610151000.t23@alwaha-clinics.example>,thr-t23,,Dr. Lubna Farah,lubna.farah@alwaha-clinics.example,requests@company.example,,Online booking form not sending confirmations,"Hello,
+
+Since this morning the online booking form on our website is not sending confirmation messages. Patients do not know if their appointment is booked and they are calling the reception nonstop.
+
+Please fix it today.
+
+Dr. Lubna Farah
+Al-Waha Clinics",2026-10-15T10:00:00+03:00,,,en,holdout,AUTO_CREATE,AUTO_CREATE,true,client_escalation|new_request,urgent,ai_automation_systems,AI & Automation Officer,2026-10-15,"Demo: real urgency, a client-facing form is broken now and must be fixed today: Urgent task in To Do"
+T24,<202610151040.t24@nourfoods.example>,thr-t24,,Khaled Abu-Zaid,khaled.abuzaid@nourfoods.example,requests@company.example,,URGENT!!! Winter campaign ideas,"Hi team,
+
+URGENT please!! We need 3 campaign ideas for our winter season, each with the channels we should use.
+
+Please send them by Thursday 29 October.
+
+Thanks,
+Khaled",2026-10-15T10:40:00+03:00,,,en,holdout,AUTO_CREATE,AUTO_CREATE,true,new_request,normal|high,marketing_growth,Marketing & Digital Lead,2026-10-29,"Demo: the word URGENT alone does not make it Urgent (deadline 10 business days away, nothing broken): To Do, not Urgent"
+T25,<202610151130.t25@zaytouna.example>,thr-t21,<202610150900.t21@zaytouna.example>,Mahmoud Shami,mahmoud.shami@zaytouna.example,requests@company.example,,Re: Customer loyalty dashboard,"Hi again,
+
+One addition: please show the Irbid and Zarqa stores separately as well.
+
+Thanks,
+Mahmoud
+
+On Thu, 15 Oct 2026 at 09:00, Mahmoud Shami <mahmoud.shami@zaytouna.example> wrote:
+> We would like a dashboard for our loyalty program.",2026-10-15T11:30:00+03:00,,,en,holdout,FOLLOW_UP_COMMENT,FOLLOW_UP_COMMENT,true,follow_up,,,,,"Demo: reply in T21's thread becomes a comment on the loyalty dashboard task, not a duplicate task"
+T26,<202610151200.t26@company.example>,thr-t26,,Dana Saleh,dana.saleh@company.example,requests@company.example,,Petra,"Can someone check the Petra figures before Sunday? Something doesn't add up.
+
+D.",2026-10-15T12:00:00+03:00,,,en,holdout,HUMAN_REVIEW,HUMAN_REVIEW,true,,,,,,"Demo: unclear ask from the General Manager still goes to Needs Review with a question, because the content decides, not the sender"
+T27,<202610151230.t27@company.example>,thr-t27,,Hala Masri,hala.masri@company.example,requests@company.example,,Approval needed: office software licenses renewal,"Hi,
+
+The yearly renewal for our office software licenses (15 users) is JOD 2,700. Please approve the payment before Sunday 25 October so our accounts are not interrupted.
+
+The invoice is attached.
+
+Thanks,
+Hala",2026-10-15T12:30:00+03:00,,,en,holdout,HUMAN_REVIEW,HUMAN_REVIEW,true,new_request,,operations_admin,Operations Manager,,"Demo: asks us to approve a payment: Needs Review, a manager approves before any work starts"
+T28,<202610151300.t28@company.example>,thr-t28,,Rami Khoury,rami.khoury@company.example,requests@company.example,,Al-Waha open day – three requests,"Hi all,
+
+Al-Waha Clinics asked us for three things before their open day:
+1) A patient waiting-time report for September.
+2) A roll-up banner for the open day.
+3) An updated quotation for the extra training sessions.
+
+All by Tuesday 27 October please.
+
+Rami",2026-10-15T13:00:00+03:00,,,en,holdout,HUMAN_REVIEW,HUMAN_REVIEW,true,new_request,,,,,"Demo: three asks for three teams (BI, design, proposals): Needs Review, split into one task per team"
+T29,<202610150730.t29@hrtrends.example>,thr-t29,,HR Trends,news@hrtrends.example,requests@company.example,,HR Trends Monthly: 5 onboarding ideas for Q4,"This month: 5 onboarding ideas for Q4, a free job description template, and our webinar on performance reviews.
+
+Read online | Manage preferences | Unsubscribe",2026-10-15T07:30:00+03:00,,"<mailto:unsubscribe@hrtrends.example>, <https://hrtrends.example/unsubscribe>",en,holdout,LOG_ONLY,LOG_ONLY,false,newsletter,,,,,"Demo: newsletter caught by the List-Unsubscribe header rule, no AI call and no task"
+T30,<202610151330.t30@mail.example>,thr-t30,,Rakan Ali,rakan.ali@mail.example,requests@company.example,,استفسار عن أسعار الهوية والسوشال ميديا,"مرحبا،
+
+عندي مطعم جديد بعمّان، وحابب أعرف أسعاركم لتصميم هوية بصرية وإدارة حسابات السوشال ميديا لأول 3 شهور.
+
+شكراً،
+راكان علي",2026-10-15T13:30:00+03:00,,,ar,holdout,AUTO_CREATE,AUTO_CREATE,true,new_request|question,normal,clients_proposals,Business Development Lead,2026-10-22,"Demo: new client from a personal address asks for prices in Arabic: To Do for Business Development like any request, due from the Normal SLA (+5 business days)"
